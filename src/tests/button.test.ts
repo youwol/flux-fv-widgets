@@ -1,6 +1,7 @@
 import { instantiateModules, parseGraph, renderTemplate, Runner } from "@youwol/flux-core"
 import { ModuleButton } from "../index"
 
+console.log = () => {}
 
 test('ModuleButton', (done) => {
 

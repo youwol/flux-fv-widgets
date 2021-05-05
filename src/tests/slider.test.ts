@@ -1,7 +1,8 @@
 import { instantiateModules, ModuleDataEmitter, parseGraph, renderTemplate, Runner } from "@youwol/flux-core"
-import { delay, skip, take } from "rxjs/operators"
+import { take } from "rxjs/operators"
 import { ModuleSlider } from "../index"
 
+console.log = () => {}
 
 test('ModuleSlider, no emit on drag', (done) => {
 
