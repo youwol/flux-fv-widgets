@@ -4,3 +4,4 @@
 export * from './lib/main';
 export * from './lib/slider.module';
 export * from './lib/button.module';
+export * from './lib/select.module';
