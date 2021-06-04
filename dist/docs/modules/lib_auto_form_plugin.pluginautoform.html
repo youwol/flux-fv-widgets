@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>lib/button.module | @youwol/flux-fv-widgets</title>
+	<title>PluginAutoForm | @youwol/flux-fv-widgets</title>
 	<meta name="description" content="Documentation for @youwol/flux-fv-widgets">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -55,24 +55,45 @@
 					<a href="../modules.html">@youwol/flux-fv-widgets</a>
 				</li>
 				<li>
-					<a href="lib_button_module.html">lib/button.module</a>
+					<a href="lib_auto_form_plugin.html">lib/auto-form.plugin</a>
+				</li>
+				<li>
+					<a href="lib_auto_form_plugin.pluginautoform.html">PluginAutoForm</a>
 				</li>
 			</ul>
-			<h1>Module lib/button.module</h1>
+			<h1>Namespace PluginAutoForm</h1>
 		</div>
 	</div>
 </header>
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<div class="lead">
+						<a href="#presentation" id="presentation" style="color: inherit; text-decoration: none;">
+							<h2>Presentation</h2>
+						</a>
+					</div>
+					<p>Plugin that exposes some module&#39;s configuration in a widget (in the render panel) and allows to update
+					configuration at run time.</p>
+					<p>It exposes one input for every inputs of the parent module.
+						When an incoming messages reach one input of the plugin, the message is forwarded
+						to the related input of the parent module along with the configuration defined by the user
+					from the widget.</p>
+					<p>A <a href="../classes/lib_auto_form_plugin.pluginautoform.persistentdata.html#triggerpolicy">PluginAutoForm.PersistentData.triggerPolicy</a> allows to control when to forward message
+					to the parent module when incoming messages reach the plugin.</p>
+				</div>
+			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Namespaces</h3>
+							<h3>Classes</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="lib_button_module.modulebutton.html" class="tsd-kind-icon">Module<wbr>Button</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-namespace"><a href="../classes/lib_auto_form_plugin.pluginautoform.module.html" class="tsd-kind-icon">Module</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-namespace"><a href="../classes/lib_auto_form_plugin.pluginautoform.persistentdata.html" class="tsd-kind-icon">Persistent<wbr>Data</a></li>
 							</ul>
 						</section>
 					</div>
@@ -85,31 +106,16 @@
 					<li class=" ">
 						<a href="../modules.html">Exports</a>
 					</li>
-					<li class=" tsd-kind-module">
-						<a href="auto_generated.html">auto_<wbr>generated</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="lib_auto_form_plugin.html">lib/auto-<wbr>form.plugin</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="lib_auto_form_auto_form_view.html">lib/auto-<wbr>form/auto-<wbr>form.view</a>
-					</li>
-					<li class="current tsd-kind-module">
-						<a href="lib_button_module.html">lib/button.module</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="lib_main.html">lib/main</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="lib_select_module.html">lib/select.module</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="lib_slider_module.html">lib/slider.module</a>
-					</li>
 				</ul>
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
+					<li class=" tsd-kind-class tsd-parent-kind-namespace">
+						<a href="../classes/lib_auto_form_plugin.pluginautoform.module.html" class="tsd-kind-icon">Module</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-namespace">
+						<a href="../classes/lib_auto_form_plugin.pluginautoform.persistentdata.html" class="tsd-kind-icon">Persistent<wbr>Data</a>
+					</li>
 				</ul>
 			</nav>
 		</div>
