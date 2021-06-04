@@ -35,6 +35,7 @@ module.exports = {
         '@youwol/cdn-client': '@youwol/cdn-client',
         '@youwol/flux-view': "@youwol/flux-view",
         '@youwol/fv-input': "@youwol/fv-input",
+        '@youwol/fv-tabs': "@youwol/fv-tabs",
     }],
     module: {
         rules: [

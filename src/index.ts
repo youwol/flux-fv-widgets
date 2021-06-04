@@ -5,3 +5,4 @@ export * from './lib/main';
 export * from './lib/slider.module';
 export * from './lib/button.module';
 export * from './lib/select.module';
+export * from './lib/auto-form.plugin';
