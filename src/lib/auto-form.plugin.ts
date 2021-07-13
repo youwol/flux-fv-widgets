@@ -47,7 +47,7 @@ export namespace PluginAutoForm {
     export class PersistentData  {
         
         /**
-         * This property control what is happening with new incoming message:
+         * This property control what is happening when incoming messages reach the module:
          * -    'always': incoming messages are directly transferred to 
          * the parent module with the current configuration defined by the plugin
          * -    'applyOnly': incoming messages is 'waiting' in the plugin until
@@ -68,7 +68,7 @@ export namespace PluginAutoForm {
             description:'define default value',
             type: 'code'
         })
-        defaultValues: string | ( (d) => {[key:string]: any} )
+        defaultValues: string | ( (d: {data, configuration, context}) => {[key:string]: any} )
 
         getDefaultValues( data: any, configuration: any, context:any){
 
@@ -79,10 +79,40 @@ export namespace PluginAutoForm {
             return getter({data, configuration, context})
         }
 
-        constructor({triggerPolicy, defaultValues }:{ triggerPolicy?: TriggerPolicyEnum, defaultValues?: string | ( (d) => {[key:string]: any} )} = {}) {
+        /**
+         * This property allows to define default data used when no data have reached the module yet.
+         * This is usually helpful when a module does not actually need data 
+         * (modules defined only by their configuration).
+         * Use:
+         * -    `return undefined`
+         * to enforce waiting for incoming data before sending
+         * anything to the parent module
+         * -    `return () => ({a:1})` (e.g.) to use {a:1} as 
+         * data when pressing 'apply' in the plugin before any data actually reached the module.
+         */
+        @Property({
+            description:'define default data if needed',
+            type: 'code'
+        })
+        defaultData: string | ( (d) => any )
+
+        getDefaultData(){
+
+            let getter = typeof this.defaultData == 'string' 
+                ? new Function(this.defaultData)() 
+                : this.defaultData
+
+            return getter
+        }
+
+        constructor({triggerPolicy, defaultValues, defaultData }:
+            {   triggerPolicy?: TriggerPolicyEnum, 
+                defaultValues?: string | ( (d) => {[key:string]: any} ),
+                defaultData?: string | ( (d) => any )} = {}) {
 
             this.triggerPolicy = triggerPolicy ?? TriggerPolicyEnum.always
             this.defaultValues = defaultValues ?? `return ({data}) => ({})`
+            this.defaultData = defaultData ?? `return undefined`
         }
     }
 
@@ -124,7 +154,11 @@ export namespace PluginAutoForm {
             
             this.parentModule.inputSlots.forEach((inputSlot: InputSlot, i: number) => {
 
-                let data$ = new ReplaySubject<{data:any, context:any}>(1)
+                let defaultData = conf.getDefaultData()
+
+                let data$ = defaultData 
+                    ? new BehaviorSubject<{data:any, context:any}>({data:defaultData(), context: undefined})
+                    : new ReplaySubject<{data:any, context:any}>(1)
 
                 let sub = (conf.triggerPolicy == TriggerPolicyEnum.always )
                     ?   combineLatest([data$, this.configurationOut$]).subscribe(
