@@ -209,22 +209,30 @@ export namespace PluginAutoForm {
         Object.keys(schemaWithValue).forEach( k => schemaWithValue[k] = schemaWithValue[k][0])
         let state = new AutoForm.State(mdle.configurationIn$, schemaWithValue as any)
         
-        let applyView = {
-            class:'d-flex fv-text-focus fv-pointer fv-color-primary align-items-center p-2 fv-hover-bg-background-alt', 
-            children:[
-                { tag:'i', class: 'fas fa-play-circle px-2'},
-                { innerText:'apply'}
-            ],
-            onclick: (ev) => {
-                mdle.configurationOut$.next(state.currentValue$.getValue() as PersistentData) 
+        if(mdle.getPersistentData<PersistentData>().triggerPolicy == TriggerPolicyEnum.applyOnly){
+            let applyView = {
+                class:'d-flex fv-text-focus fv-pointer fv-color-primary align-items-center p-2 fv-hover-bg-background-alt', 
+                children:[
+                    { tag:'i', class: 'fas fa-play-circle px-2'},
+                    { innerText:'apply'}
+                ],
+                onclick: (ev) => {
+                    mdle.configurationOut$.next(state.currentValue$.getValue() as PersistentData) 
+                }
             }
+            let view = {
+                class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
+                children:[
+                    applyView,
+                    new AutoForm.View({state, class:'flex-grow-1 overflow-auto', style:{'min-height':'0px'}} as any)
+                ]
+            }
+            return  render(view)
         }
-        
-        
+        state.currentValue$.subscribe( v => mdle.configurationOut$.next(v as PersistentData))
         let view = {
             class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
             children:[
-                applyView,
                 new AutoForm.View({state, class:'flex-grow-1 overflow-auto', style:{'min-height':'0px'}} as any)
             ]
         }

@@ -2,15 +2,15 @@ import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs'
 
 import { map, tap } from 'rxjs/operators'
 import { Switch } from '@youwol/fv-button'
-import { TextInput, NumberInput} from '@youwol/fv-input'
+import { TextInput, NumberInput, Select, ColorPicker, Slider} from '@youwol/fv-input'
 import { Tabs } from '@youwol/fv-tabs'
-import { child$, HTMLElement$, VirtualDOM } from '@youwol/flux-view'
+import { attr$, child$, HTMLElement$, VirtualDOM } from '@youwol/flux-view'
 import {cloneDeep} from 'lodash'
 
 export namespace AutoForm {
 
-    type ValueDescription = { name: string, type: string, metadata: any }
-    type ValueType = number | string | boolean
+    export interface ValueDescription{ name: string, type: string, metadata: any }
+    export type ValueType = number | string | boolean
 
     export interface Schema {
 
@@ -19,37 +19,101 @@ export namespace AutoForm {
 
     export class State {
 
-        formDescription$: BehaviorSubject<Object>
+        inputValues$: BehaviorSubject<Object>
         currentValue$ : BehaviorSubject<Object>
 
-        constructor(formDescription$: BehaviorSubject<Object> | Object, public readonly schema: Schema) {
-            this.formDescription$ = (formDescription$ instanceof BehaviorSubject)
-            ? formDescription$ 
-            : new BehaviorSubject<Object>(formDescription$ as Object)
+        outputValues$ = new Array<Observable<{path:Array<string>,value:ValueType}>>()
 
-            this.currentValue$ = new BehaviorSubject(this.formDescription$.getValue())
+        constructor(
+            inputValues$: BehaviorSubject<Object> | Object, 
+            public readonly schema: Schema,
+            public readonly elementsViewFactory: any = viewFactory
+            ) {
+            this.inputValues$ = (inputValues$ instanceof BehaviorSubject)
+            ? inputValues$ 
+            : new BehaviorSubject<Object>(inputValues$ as Object)
+            console.log("Scemas",schema )
+            this.currentValue$ = new BehaviorSubject(this.inputValues$.getValue())
+
         }
     }
 
-    let viewFactory = [
+    export let viewFactory = [
         {
             test: (value: ValueDescription) => value.type == "Boolean",
-            view: (value: any) => new Switch.View({
-                state: new Switch.State(value)
-            })
+            view: (value$: BehaviorSubject<boolean>) => {
+                Switch.View.defaultRadius = 10
+                return new Switch.View({
+                    state: new Switch.State(value$)
+                } as any)
+            }
+        },
+        {
+            test: (value: ValueDescription) => value.metadata.type == "color",
+            view: (value$: BehaviorSubject<string>, description: ValueDescription) => {
+                
+                return new ColorPicker.View({
+                    state: new ColorPicker.State(value$)
+                } as any)
+            }
+        },
+        {
+            test: (value: ValueDescription) => value.metadata.enum,
+            view: (value$: BehaviorSubject<string>, description: ValueDescription) => {
+                let items = description.metadata.enum.map( text => new Select.ItemData(text, text))
+                return new Select.View({
+                    state: new Select.State(items, value$),
+                    class: 'w-100 ',
+                    style: { fontSize: 'larger' }
+                } as any)
+            }
         },
         {
             test: (value: ValueDescription) => value.type == "String",
-            view: (value: any) => new TextInput.View({
-                state: new TextInput.State(value)
-            })
+            view: (value$: BehaviorSubject<string>) => {
+                return { 
+                    tag:'input', 
+                    type:'text', 
+                    value: value$.getValue(),
+                    onchange:  (event) => value$.next(event.target.value)
+                }
+            }
+        },
+        {
+            test: (value: ValueDescription) =>{
+                return value.type == "Number" && value.metadata.min != undefined && value.metadata.max != undefined
+            },
+            view: (value$: BehaviorSubject<number>, description: ValueDescription) =>{
+                let hovered$ = new BehaviorSubject(false)
+                let state = new Slider.State({min: description.metadata.min, max: description.metadata.max, value:value$, count:1000 })
+                return {
+                    class:'d-flex',
+                    children:[
+                        { 
+                            tag:'input',
+                            class: attr$( hovered$, (isHovered) => isHovered ? 'w-100' : 'w-25'), 
+                            type:'number', 
+                            value: attr$( value$, (v) => v ),
+                            onchange:  (event) => value$.next(Number(event.target.value)),
+                            onmouseenter: () => hovered$.next(true),
+                            onmouseleave:  () => hovered$.next(false),
+                        },
+                        new Slider.View({state, class:"w-75"} as any) 
+                    ]
+                }
+            }
         },
         {
             test: (value: ValueDescription) => value.type == "Number",
-            view: (value: any) => new NumberInput.View({
-                state:new NumberInput.State(value) 
-            })
-        }
+            view: (value$: BehaviorSubject<number>) =>{
+                return { 
+                    tag:'input', 
+                    type:'number', 
+                    value: value$.getValue(),
+                    onchange: (event) => value$.next(Number(event.target.value))
+                }
+            }
+        },
     ]
 
     export class View implements VirtualDOM {
@@ -61,18 +125,23 @@ export namespace AutoForm {
         constructor({state, ...rest} : {state: State}) {
             Object.assign(this, rest)
             this.state = state
-            let observables : Array<Observable<{path:Array<string>,value:ValueType}>>
 
             this.children = [
                 child$( 
-                    state.formDescription$.pipe(
-                        tap( () =>  observables = new Array<Observable<{path:Array<string>,value:ValueType}>>() )
-                    ),
-                    (formDescription) => groupItems( Object.entries(state.schema), formDescription, observables),
+                    state.inputValues$,
+                    (formDescription) => {
+                        return groupItems( 
+                            Object.entries(state.schema), 
+                            formDescription, 
+                            [],
+                            state
+                        )
+                    },
                     {
                         sideEffects: (_, elem: HTMLElement$) => {
-                            let sub = combineLatest( observables ).subscribe( entries => {
-                                let base = cloneDeep(state.formDescription$.getValue())
+                            
+                            let sub = combineLatest( this.state.outputValues$ ).subscribe( entries => {
+                                let base = cloneDeep(state.inputValues$.getValue())
                                 entries.forEach( ({path, value}) => {
                                     let lastPart = path.slice(-1)[0]
                                     let parentParts = path.slice(0,-1)
@@ -92,23 +161,27 @@ export namespace AutoForm {
         items: Array< [string, ValueDescription]>,
         basePath: Array<string>, 
         configurationBase: Object,
-        observables: Array<Observable<{path:Array<string>,value:ValueType}>> 
+        state: State
+        //observables: Array<Observable<{path:Array<string>,value:ValueType}>> 
         ) : VirtualDOM{
-
+        
+        let order = Object.keys(basePath.reduce((acc, e) => acc[e], configurationBase))
+        
+        items= items.sort( (lhs, rhs) => order.indexOf(lhs[0]) - order.indexOf(rhs[0]))
         if (items.length == 0) 
             return {}
 
         return {
-            class:'row', style:{'font-size': 'smaller', padding:'0px', margin:'0px'},
+            class:'row', style:{ padding:'0px', margin:'0px'},
             children: items.map( item => [
                 {
-                    class:'col',
+                    class:'col my-auto p-0',
                     innerText: item[0]
                 },
                 {
-                    class:'col', style:{ 'align-self': 'center' },
+                    class:'col pl-0', style:{ 'align-self': 'center' },
                     children: [
-                        leafView(item[1], basePath.concat(item[0]), configurationBase, observables)
+                        leafView(item[1], basePath.concat(item[0]), configurationBase, state)
                     ]
                 },
                 {   class:"w-100 py-1"}
@@ -116,30 +189,34 @@ export namespace AutoForm {
         }
     }
     function isLeaf(v: ValueDescription) {
-        return v.type && ["Number", "String", "Boolean"].includes(v.type)
+        return v.type && ["Number", "String", "Boolean", "Object"].includes(v.type)
     }
 
     function leafView(
         valueMeta: ValueDescription, 
-        path: Array<string>, configuration, 
-        observables: Array<Observable<{path:Array<string>,value:ValueType}>>
+        path: Array<string>, 
+        configuration, 
+        state: State
+        //observables: Array<Observable<{path:Array<string>,value:ValueType}>>
         ): VirtualDOM {
 
         let value0 = path.reduce((acc, e) => acc[e], configuration)
-        let factory = viewFactory.find(element => element.test(valueMeta))
+        let factory = state.elementsViewFactory.find(element => element.test(valueMeta))
         if(! factory)
             return { id:'unkwnown-element-'+ valueMeta.name+'-'+valueMeta.type}
-        let view = factory.view(value0 as any);
-        let obs = (view.state.value$ as Observable<any>).pipe(map(value => ({ path, value })))
-        observables.push(obs)
+        let value$ = new BehaviorSubject(value0)
+        let view = factory.view(value$, valueMeta);
+        let obs = ( value$ as Observable<any>).pipe(map(value => ({ path, value })))
+        state.outputValues$.push(obs)
         return view
     }
 
     function groupItems(
-            items: Array<[string, ValueDescription]>, 
+            items, 
             configurationBase, 
-            observables: Array<Observable<{path:Array<string>,value:ValueType}>>,
-            basePath: Array<string> = []
+            //observables: Array<Observable<{path:Array<string>,value:ValueType}>>,
+            basePath: Array<string> = [],
+            state: State
             ): VirtualDOM {
 
         let currentItems = items.filter(([k, v]: [string, ValueDescription]) => !k.includes(".") && isLeaf(v))
@@ -157,12 +234,12 @@ export namespace AutoForm {
                 acc[prefix].values.push(val)
                 return acc
             }, {})
-
+        
         let r = Object.entries(children)
-            .map(([prefix, { values, basePath }]: any) => [prefix, groupItems(values, configurationBase, observables, basePath)])
+            .map(([prefix, { values, basePath }]: any) => [prefix, groupItems(values, configurationBase, basePath, state)])
             .reduce((acc, [k, v]) => Object.assign({}, acc, { [k]: v }), {})
         
-        let itemsView = createAttributesGrid(currentItems,basePath,configurationBase,observables)
+        let itemsView = createAttributesGrid(currentItems, basePath, configurationBase, state)
         
         let tabsData = Object.entries(r).map( ([key, val]) => {
             let tabData =  new Tabs.TabData(key,key)
