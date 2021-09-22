@@ -1,11 +1,11 @@
 import { BuilderView, flattenSchemaWithValue, Flux, freeContract, InputSlot, PluginFlux, Property, 
     RenderView, Schema, SideEffects } from "@youwol/flux-core"
-import { BehaviorSubject, combineLatest, ReplaySubject, Subscription } from "rxjs"
+import { BehaviorSubject, combineLatest, ReplaySubject, Subject, Subscription } from "rxjs"
 import { withLatestFrom } from "rxjs/operators"
 import { pack } from "./main"
 import {mergeWith, cloneDeep} from 'lodash'
 import { AutoForm } from "./auto-form/auto-form.view"
-import { render } from "@youwol/flux-view"
+import { HTMLElement$, render, VirtualDOM } from "@youwol/flux-view"
 
 /**
  ## Presentation
@@ -32,7 +32,7 @@ export namespace PluginAutoForm {
      * Define when to forward message to parent module when an incoming message reach the plugin.
      * See [[PersistentData]]
      */
-    enum TriggerPolicyEnum{
+    export enum TriggerPolicyEnum{
         always = "always",
         applyOnly = "apply only"
     }
@@ -58,7 +58,7 @@ export namespace PluginAutoForm {
             description:'define when the parent module process is triggered when input data arrives',
             enum: Object.values(TriggerPolicyEnum)
         })
-        triggerPolicy: TriggerPolicyEnum
+        triggerPolicy: TriggerPolicyEnum = TriggerPolicyEnum.always
 
         /**
          * This property allows to defined default values for the exposed configuration
@@ -68,7 +68,7 @@ export namespace PluginAutoForm {
             description:'define default value',
             type: 'code'
         })
-        defaultValues: string | ( (d: {data, configuration, context}) => {[key:string]: any} )
+        defaultValues: string | ( (d: {data, configuration, context}) => {[key:string]: any} ) = `return ({data}) => ({})`
 
         getDefaultValues( data: any, configuration: any, context:any){
 
@@ -94,7 +94,7 @@ export namespace PluginAutoForm {
             description:'define default data if needed',
             type: 'code'
         })
-        defaultData: string | ( (d) => any )
+        defaultData: string | ( (d) => any ) = `return undefined`
 
         getDefaultData(){
 
@@ -105,14 +105,38 @@ export namespace PluginAutoForm {
             return getter
         }
 
-        constructor({triggerPolicy, defaultValues, defaultData }:
+        /**
+         * This property defines which of the attributes of the parent module
+         * is exposed. 
+         * 
+         * It is a function that takes in input the field name, and return true
+         * if the property needs to be exposed.
+         * 
+         * The name of a nested property is as follow: 
+         * *    'a.b.c' means the property c of the object b of the object a 
+         */
+        @Property({
+            description: 'Defines input fields included in the widget',
+            type:'code'
+        })
+        includedProperties: string | ( (name: string, description: AutoForm.ValueDescription) => boolean ) = `return (fieldName, metadata) => true`
+
+        getIncludedPropertiesFct() {
+
+            let getter = typeof this.includedProperties == 'string' 
+            ? new Function(this.includedProperties)() 
+            : this.includedProperties
+
+            return getter
+        }
+
+        constructor(params:
             {   triggerPolicy?: TriggerPolicyEnum, 
                 defaultValues?: string | ( (d) => {[key:string]: any} ),
-                defaultData?: string | ( (d) => any )} = {}) {
+                defaultData?: string | ( (d) => any ),
+                includedProperties?: string | ( (name: string) => boolean )} = {}) {
 
-            this.triggerPolicy = triggerPolicy ?? TriggerPolicyEnum.always
-            this.defaultValues = defaultValues ?? `return ({data}) => ({})`
-            this.defaultData = defaultData ?? `return undefined`
+            Object.assign(this, params)
         }
     }
 
@@ -185,11 +209,6 @@ export namespace PluginAutoForm {
                 })
             })
         }
-        
-        getSchema(){
-            let schema = flattenSchemaWithValue(this.parentModule.configuration.data) as any 
-            return schema
-        }
 
         dispatch(index, data, configuration, context){
             this.parentModule.inputSlots[index].subscribeFct({message:{data,configuration, context}, connection: undefined})
@@ -204,37 +223,60 @@ export namespace PluginAutoForm {
     
     function renderHtmlElement(mdle: Module) {
 
-       // let config0 = _.clone(mdle.parentModule.configuration.data)
         let schemaWithValue = flattenSchemaWithValue(mdle.parentModule.configuration.data)
         Object.keys(schemaWithValue).forEach( k => schemaWithValue[k] = schemaWithValue[k][0])
-        let state = new AutoForm.State(mdle.configurationIn$, schemaWithValue as any)
+
+        let state = new AutoForm.State(
+            mdle.configurationIn$, 
+            schemaWithValue as any,
+            mdle.getPersistentData<PersistentData>().getIncludedPropertiesFct()
+            )
         
         if(mdle.getPersistentData<PersistentData>().triggerPolicy == TriggerPolicyEnum.applyOnly){
-            let applyView = {
-                class:'d-flex fv-text-focus fv-pointer fv-color-primary align-items-center p-2 fv-hover-bg-background-alt', 
+
+            let apply$ = new Subject<MouseEvent>()
+            let sub = apply$.pipe(
+                withLatestFrom(state.currentValue$)
+            ).subscribe( ([_,values]) => {
+                mdle.configurationOut$.next( new PersistentData(values))
+            })
+
+            let applyView : VirtualDOM = {
+                class:'d-flex fv-text-focus fv-pointer fv-color-primary align-items-center p-2 fv-hover-bg-background-alt auto-form-apply', 
                 children:[
                     { tag:'i', class: 'fas fa-play-circle px-2'},
                     { innerText:'apply'}
                 ],
                 onclick: (ev) => {
-                    mdle.configurationOut$.next(state.currentValue$.getValue() as PersistentData) 
+                    apply$.next(ev)
                 }
             }
-            let view = {
+            
+            let view : VirtualDOM = {
                 class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
                 children:[
                     applyView,
                     new AutoForm.View({state, class:'flex-grow-1 overflow-auto', style:{'min-height':'0px'}} as any)
-                ]
+                ],
+                connectedCallback: (elem: HTMLElement$) => {
+                    elem.ownSubscriptions(sub)
+                }
             }
             return  render(view)
         }
+
+        let sub = state.currentValue$.subscribe( values => {
+            mdle.configurationOut$.next( new PersistentData(values))
+        })
         state.currentValue$.subscribe( v => mdle.configurationOut$.next(v as PersistentData))
-        let view = {
+        let view : VirtualDOM = {
             class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
             children:[
                 new AutoForm.View({state, class:'flex-grow-1 overflow-auto', style:{'min-height':'0px'}} as any)
-            ]
+            ],
+            connectedCallback: (elem: HTMLElement$) => {
+                elem.ownSubscriptions(sub)
+            }
         }
         return  render(view)
     }

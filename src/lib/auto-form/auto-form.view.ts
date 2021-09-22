@@ -1,8 +1,8 @@
-import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs'
+import { BehaviorSubject, combineLatest, Observable, Subject, Subscription } from 'rxjs'
 
-import { map, tap } from 'rxjs/operators'
+import { map } from 'rxjs/operators'
 import { Switch } from '@youwol/fv-button'
-import { TextInput, NumberInput, Select, ColorPicker, Slider} from '@youwol/fv-input'
+import { Select, ColorPicker, Slider} from '@youwol/fv-input'
 import { Tabs } from '@youwol/fv-tabs'
 import { attr$, child$, HTMLElement$, VirtualDOM } from '@youwol/flux-view'
 import {cloneDeep} from 'lodash'
@@ -20,21 +20,34 @@ export namespace AutoForm {
     export class State {
 
         inputValues$: BehaviorSubject<Object>
-        currentValue$ : BehaviorSubject<Object>
+        currentValue$ : Subject<any>
 
         outputValues$ = new Array<Observable<{path:Array<string>,value:ValueType}>>()
 
         constructor(
             inputValues$: BehaviorSubject<Object> | Object, 
             public readonly schema: Schema,
+            public readonly includedProperties: (name:string, description: ValueDescription) => boolean = ()=>true,
             public readonly elementsViewFactory: any = viewFactory
             ) {
-            this.inputValues$ = (inputValues$ instanceof BehaviorSubject)
-            ? inputValues$ 
-            : new BehaviorSubject<Object>(inputValues$ as Object)
-            console.log("Scemas",schema )
-            this.currentValue$ = new BehaviorSubject(this.inputValues$.getValue())
 
+            this.inputValues$ = (inputValues$ instanceof BehaviorSubject)
+                ? inputValues$ 
+                : new BehaviorSubject<Object>(inputValues$ as Object)
+
+            this.currentValue$ = new Subject()
+        }
+        connect() : Subscription {
+
+            return combineLatest( this.outputValues$ ).subscribe(entries => {
+                let base = cloneDeep(this.inputValues$.getValue())
+                entries.forEach( ({path, value}) => {
+                    let lastPart = path.slice(-1)[0]
+                    let parentParts = path.slice(0,-1)
+                    parentParts.reduce( (acc,e) => acc[e], base )[lastPart] = value
+                })
+                this.currentValue$.next(base)
+            })        
         }
     }
 
@@ -130,26 +143,18 @@ export namespace AutoForm {
                 child$( 
                     state.inputValues$,
                     (formDescription) => {
-                        return groupItems( 
+                        let rootView = groupItems( 
                             Object.entries(state.schema), 
                             formDescription, 
                             [],
                             state
                         )
+                        
+                        return rootView != undefined ? rootView : {}
                     },
                     {
                         sideEffects: (_, elem: HTMLElement$) => {
-                            
-                            let sub = combineLatest( this.state.outputValues$ ).subscribe( entries => {
-                                let base = cloneDeep(state.inputValues$.getValue())
-                                entries.forEach( ({path, value}) => {
-                                    let lastPart = path.slice(-1)[0]
-                                    let parentParts = path.slice(0,-1)
-                                    parentParts.reduce( (acc,e) => acc[e], base )[lastPart] = value
-                                })
-                                state.currentValue$.next(base)
-                            })
-                            elem.ownSubscriptions(sub)
+                            elem.ownSubscriptions(state.connect())
                         }
                     }
                 )
@@ -162,24 +167,28 @@ export namespace AutoForm {
         basePath: Array<string>, 
         configurationBase: Object,
         state: State
-        //observables: Array<Observable<{path:Array<string>,value:ValueType}>> 
-        ) : VirtualDOM{
+        ) : VirtualDOM | undefined {
         
         let order = Object.keys(basePath.reduce((acc, e) => acc[e], configurationBase))
         
-        items= items.sort( (lhs, rhs) => order.indexOf(lhs[0]) - order.indexOf(rhs[0]))
+        items = items
+        .filter( ([name,description]) => state.includedProperties(basePath.concat([name]).reduce((acc,e) => acc+'.'+e), description))
+        .sort( (lhs, rhs) => order.indexOf(lhs[0]) - order.indexOf(rhs[0]))
+
         if (items.length == 0) 
-            return {}
+            return undefined
 
         return {
-            class:'row', style:{ padding:'0px', margin:'0px'},
+            class:`row object-name-${basePath.slice(-1)[0]} auto-form-grp-content`, style:{ padding:'0px', margin:'0px'},
             children: items.map( item => [
                 {
-                    class:'col my-auto p-0',
+                    class:`col my-auto p-0 auto-form-title value-name-${item[0]}`,
                     innerText: item[0]
                 },
                 {
-                    class:'col pl-0', style:{ 'align-self': 'center' },
+                    class:`col pl-0 auto-form-value value-name-${item[0]}`, 
+                    title: item[0],
+                    style:{ 'align-self': 'center' },
                     children: [
                         leafView(item[1], basePath.concat(item[0]), configurationBase, state)
                     ]
@@ -197,7 +206,6 @@ export namespace AutoForm {
         path: Array<string>, 
         configuration, 
         state: State
-        //observables: Array<Observable<{path:Array<string>,value:ValueType}>>
         ): VirtualDOM {
 
         let value0 = path.reduce((acc, e) => acc[e], configuration)
@@ -214,10 +222,9 @@ export namespace AutoForm {
     function groupItems(
             items, 
             configurationBase, 
-            //observables: Array<Observable<{path:Array<string>,value:ValueType}>>,
             basePath: Array<string> = [],
             state: State
-            ): VirtualDOM {
+            ): VirtualDOM | undefined {
 
         let currentItems = items.filter(([k, v]: [string, ValueDescription]) => !k.includes(".") && isLeaf(v))
 
@@ -237,10 +244,13 @@ export namespace AutoForm {
         
         let r = Object.entries(children)
             .map(([prefix, { values, basePath }]: any) => [prefix, groupItems(values, configurationBase, basePath, state)])
+            .filter(([_, groupView]) => groupView != undefined)
             .reduce((acc, [k, v]) => Object.assign({}, acc, { [k]: v }), {})
         
         let itemsView = createAttributesGrid(currentItems, basePath, configurationBase, state)
-        
+        if(!itemsView){
+            return undefined
+        }
         let tabsData = Object.entries(r).map( ([key, val]) => {
             let tabData =  new Tabs.TabData(key,key)
             tabData['view'] = val
@@ -255,16 +265,17 @@ export namespace AutoForm {
         let tabView = new Tabs.View({
             state: tabState,
             contentView: (_,tabData) => tabData['view'],
-            headerView: (_,tabData) => ({innerText: tabData.name, class:'px-2'})
+            headerView: (_,tabData) => {
+                return {innerText: tabData.name, class:`px-2 auto-form-tab-header ${tabData.id}`, title:tabData.name} 
+            }
         })
-        let data = {
+        return {
             'class': 'p-2',
             'children': [
                 itemsView,
                 tabView
             ]
         }
-        return data
     }
 
 }
