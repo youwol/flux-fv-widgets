@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>ModuleSlider | @youwol/flux-fv-widgets</title>
+	<title>TriggerPolicyEnum | @youwol/flux-fv-widgets</title>
 	<meta name="description" content="Documentation for @youwol/flux-fv-widgets">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -55,13 +55,16 @@
 					<a href="../modules.html">@youwol/flux-fv-widgets</a>
 				</li>
 				<li>
-					<a href="lib_slider_module.html">lib/slider.module</a>
+					<a href="../modules/lib_auto_form_plugin.html">lib/auto-form.plugin</a>
 				</li>
 				<li>
-					<a href="lib_slider_module.moduleslider.html">ModuleSlider</a>
+					<a href="../modules/lib_auto_form_plugin.pluginautoform.html">PluginAutoForm</a>
+				</li>
+				<li>
+					<a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html">TriggerPolicyEnum</a>
 				</li>
 			</ul>
-			<h1>Namespace ModuleSlider</h1>
+			<h1>Enumeration TriggerPolicyEnum</h1>
 		</div>
 	</div>
 </header>
@@ -71,23 +74,12 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<a href="#presentation" id="presentation" style="color: inherit; text-decoration: none;">
-							<h2>Presentation</h2>
+						<a href="#triggerpolicyenum" id="triggerpolicyenum" style="color: inherit; text-decoration: none;">
+							<h2>TriggerPolicyEnum</h2>
 						</a>
 					</div>
-					<p>A simple slider module that allows to select a number in a range.</p>
-					<blockquote>
-						<p>This module is somehow of stateful: the configuration (min, max, value &amp; step properties)
-						that can be provided at run time is kept until a new one is received.</p>
-					</blockquote>
-					<a href="#resources" id="resources" style="color: inherit; text-decoration: none;">
-						<h2>Resources</h2>
-					</a>
-					<p>Various resources:</p>
-					<ul>
-						<li>   <a href="https://github.com/youwol/fv-input">fv-input</a>:
-						the library that provides the underlying implementation</li>
-					</ul>
+					<p>Define when to forward message to parent module when an incoming message reach the plugin.
+					See <a href="../classes/lib_auto_form_plugin.pluginautoform.persistentdata.html">PersistentData</a></p>
 				</div>
 			</section>
 			<section class="tsd-panel-group tsd-index-group">
@@ -95,45 +87,36 @@
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Classes</h3>
+							<h3>Enumeration members</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-namespace"><a href="../classes/lib_slider_module.moduleslider.module.html" class="tsd-kind-icon">Module</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-namespace"><a href="../classes/lib_slider_module.moduleslider.persistentdata.html" class="tsd-kind-icon">Persistent<wbr>Data</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section ">
-							<h3>Functions</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="lib_slider_module.moduleslider.html#renderhtmlelement" class="tsd-kind-icon">render<wbr>Html<wbr>Element</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html#always" class="tsd-kind-icon">always</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html#applyonly" class="tsd-kind-icon">apply<wbr>Only</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Functions</h2>
-				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
-					<a name="renderhtmlelement" class="tsd-anchor"></a>
-					<h3>render<wbr>Html<wbr>Element</h3>
-					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
-						<li class="tsd-signature tsd-kind-icon">render<wbr>Html<wbr>Element<span class="tsd-signature-symbol">(</span>mdle<span class="tsd-signature-symbol">: </span><a href="../classes/lib_slider_module.moduleslider.module.html" class="tsd-signature-type" data-tsd-kind="Class">Module</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">HTMLElement</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in <a href="https://github.com/youwol/flux-fv-widgets/blob/c171704/src/lib/slider.module.ts#L165">src/lib/slider.module.ts:165</a></li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>mdle: <a href="../classes/lib_slider_module.moduleslider.module.html" class="tsd-signature-type" data-tsd-kind="Class">Module</a></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">HTMLElement</span></h4>
-						</li>
-					</ul>
+				<h2>Enumeration members</h2>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="always" class="tsd-anchor"></a>
+					<h3>always</h3>
+					<div class="tsd-signature tsd-kind-icon">always<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol"> = &quot;always&quot;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/youwol/flux-fv-widgets/blob/c171704/src/lib/auto-form.plugin.ts#L36">src/lib/auto-form.plugin.ts:36</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="applyonly" class="tsd-anchor"></a>
+					<h3>apply<wbr>Only</h3>
+					<div class="tsd-signature tsd-kind-icon">apply<wbr>Only<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol"> = &quot;apply only&quot;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/youwol/flux-fv-widgets/blob/c171704/src/lib/auto-form.plugin.ts#L37">src/lib/auto-form.plugin.ts:37</a></li>
+						</ul>
+					</aside>
 				</section>
 			</section>
 		</div>
@@ -147,14 +130,26 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
+				</ul>
+				<ul class="current">
+					<li class="current tsd-kind-enum tsd-parent-kind-namespace">
+						<a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html" class="tsd-kind-icon">Trigger<wbr>Policy<wbr>Enum</a>
+						<ul>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html#always" class="tsd-kind-icon">always</a>
+							</li>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="lib_auto_form_plugin.pluginautoform.triggerpolicyenum.html#applyonly" class="tsd-kind-icon">apply<wbr>Only</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+				<ul class="after-current">
 					<li class=" tsd-kind-class tsd-parent-kind-namespace">
-						<a href="../classes/lib_slider_module.moduleslider.module.html" class="tsd-kind-icon">Module</a>
+						<a href="../classes/lib_auto_form_plugin.pluginautoform.module.html" class="tsd-kind-icon">Module</a>
 					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-namespace">
-						<a href="../classes/lib_slider_module.moduleslider.persistentdata.html" class="tsd-kind-icon">Persistent<wbr>Data</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-namespace">
-						<a href="lib_slider_module.moduleslider.html#renderhtmlelement" class="tsd-kind-icon">render<wbr>Html<wbr>Element</a>
+						<a href="../classes/lib_auto_form_plugin.pluginautoform.persistentdata.html" class="tsd-kind-icon">Persistent<wbr>Data</a>
 					</li>
 				</ul>
 			</nav>
