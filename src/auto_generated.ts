@@ -1,6 +1,6 @@
 export let AUTO_GENERATED = {
     name: "@youwol/flux-fv-widgets",
     namespace: "youwol",
-    version: "0.0.5",
+    version: "0.0.6",
     description: "Collection of basic widgets (essentially from @youwol/fv-widgets)"
 }
