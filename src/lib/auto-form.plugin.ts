@@ -1,7 +1,7 @@
 import { BuilderView, flattenSchemaWithValue, Flux, freeContract, InputSlot, PluginFlux, Property, 
     RenderView, Schema, SideEffects } from "@youwol/flux-core"
-import { BehaviorSubject, combineLatest, ReplaySubject, Subject, Subscription } from "rxjs"
-import { withLatestFrom } from "rxjs/operators"
+import { BehaviorSubject, combineLatest, merge, Observable, ReplaySubject, Subject, Subscription } from "rxjs"
+import { distinct, distinctUntilChanged, map, mergeMap, withLatestFrom } from "rxjs/operators"
 import { pack } from "./main"
 import {mergeWith, cloneDeep} from 'lodash'
 import { AutoForm } from "./auto-form/auto-form.view"
@@ -167,6 +167,7 @@ export namespace PluginAutoForm {
 
         configurationOut$ : BehaviorSubject<PersistentData>
         configurationIn$ : BehaviorSubject<PersistentData>
+        currentAutoFormState = {}
 
         constructor(params) { 
             super(params) 
@@ -185,7 +186,12 @@ export namespace PluginAutoForm {
                     : new ReplaySubject<{data:any, context:any}>(1)
 
                 let sub = (conf.triggerPolicy == TriggerPolicyEnum.always )
-                    ?   combineLatest([data$, this.configurationOut$]).subscribe(
+                    ?   combineLatest([
+                            data$, 
+                            this.configurationOut$.pipe(
+                                distinctUntilChanged((prev, curr) => JSON.stringify(prev)===JSON.stringify(curr))
+                                )]
+                            ).subscribe(
                             ( [{data, context}, configuration]) => {
                                 this.dispatch(i,data,configuration,context)
                         })
@@ -202,7 +208,7 @@ export namespace PluginAutoForm {
                     onTriggered: ({data, context}) => {
                         let defaultDynValues = conf.getDefaultValues(data, conf, context)
                         let defaultValues =  cloneDeep(this.parentModule.configuration.data)
-                        mergeWith( defaultValues, defaultDynValues)
+                        mergeWith( defaultValues, this.currentAutoFormState,  defaultDynValues)
                         this.configurationIn$.next(defaultValues)
                         data$.next({data, context})
                     }
@@ -211,6 +217,7 @@ export namespace PluginAutoForm {
         }
 
         dispatch(index, data, configuration, context){
+            context && context.info(`Dispatch data on parent's output ${index}`, {data, configuration, userContext:context})
             this.parentModule.inputSlots[index].subscribeFct({message:{data,configuration, context}, connection: undefined})
         }
 
@@ -251,7 +258,7 @@ export namespace PluginAutoForm {
                     apply$.next(ev)
                 }
             }
-            
+
             let view : VirtualDOM = {
                 class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
                 children:[
@@ -266,9 +273,9 @@ export namespace PluginAutoForm {
         }
 
         let sub = state.currentValue$.subscribe( values => {
-            mdle.configurationOut$.next( new PersistentData(values))
+            mdle.currentAutoFormState = values
+            mdle.configurationOut$.next( new mdle.parentModule.Factory.PersistentData(values))
         })
-        state.currentValue$.subscribe( v => mdle.configurationOut$.next(v as PersistentData))
         let view : VirtualDOM = {
             class:'fv-bg-background fv-text-primary h-100 d-flex flex-column',
             children:[
