@@ -178,7 +178,6 @@ export namespace ModuleSlider{
             connectedCallback: (element: HTMLElement$) => {
 
                 let s0 = state.data$.subscribe( ({value, event, fromListener}) => {
-                    console.log(fromListener)
                     if( fromListener == 'oninput'  )
                         mdle.emitValueDragging({value, event}) 
 
