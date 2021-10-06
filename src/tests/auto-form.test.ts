@@ -110,7 +110,6 @@ test('test widgets, all properties exposed', (done) => {
     let dom = render(view)
     document.body.appendChild(dom)
 
-    let innerHTML = document.body.innerHTML
     let inputs = Array.from(document.body.querySelectorAll(".auto-form-value"))
     
     let titles = inputs.map( (input) => input.getAttribute('title'))
@@ -123,7 +122,9 @@ test('test widgets, all properties exposed', (done) => {
     })
 
     activated.dispatchEvent(new MouseEvent('click'))
-    
+    state.currentValue$.pipe(take(1)).subscribe( ({nested0}) => {
+        expect(nested0.activated).toEqual(true)
+    })
 
     // Quick look at the tabs for nested0 et nested1
     let tabs = Array.from(document.body.querySelectorAll(".auto-form-tab-header"))

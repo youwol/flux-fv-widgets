@@ -4,7 +4,7 @@ import {
 } from "@youwol/flux-core"
 import { PluginAutoForm } from "../lib/auto-form.plugin"
 import { ReplaySubject } from "rxjs"
-import { take } from "rxjs/operators"
+import { reduce, take } from "rxjs/operators"
 
 console.log = () => { }
 
@@ -297,7 +297,6 @@ test('with default values', (done) => {
 })
 
 
-
 test('with default data', (done) => {
 
     document.body.innerHTML = ""
@@ -331,3 +330,127 @@ test('with default data', (done) => {
         done()
     })
 })
+
+
+test('always trigger: make sure when new data reach the module the current conf is not changed', (done) => {
+
+    document.body.innerHTML = ""
+    let branches = [
+        '                    |~testModule~|---$obs$--',
+        '|~dataEmitter~|---|~autoFormPlugin~|'
+    ]
+
+    let modules = instantiateModules({
+        dataEmitter: ModuleDataEmitter,
+        testModule: [TestModule, {operation: TestModule.operationType.Multiplication} ]
+    })
+
+    let plugins = instantiatePlugins({
+        autoFormPlugin: [modules.testModule, PluginAutoForm, {
+            triggerPolicy: PluginAutoForm.TriggerPolicyEnum.always
+        }]
+    })
+
+    let observers = {
+        obs: new ReplaySubject(1)
+    }
+    let graph = parseGraph({ branches, modules, plugins, observers })
+
+    new Runner(graph)
+
+    let div = document.createElement('div')
+    div.innerHTML = '<div id="autoFormPlugin"></div>'
+    document.body.appendChild(div)
+    renderTemplate(div, Object.values(plugins))
+
+    modules.dataEmitter.emit({ data: [1, 1] })
+
+    observers.obs.pipe(take(1)).subscribe((data) => {
+        expect(data).toEqual(1)
+    })
+    let options = div.querySelectorAll('option')
+    expect(options[0].selected).toBeFalsy()
+    expect(options[1].selected).toBeTruthy()
+
+    let select = div.querySelector('select')
+    select.onchange({
+        target: [{
+            selected: true,
+            value: TestModule.operationType.Addition
+        }]
+    } as any)
+
+    options = div.querySelectorAll('option')
+    
+    expect(options[0].selected).toBeTruthy()
+    expect(options[1].selected).toBeFalsy()
+
+    observers.obs.pipe(take(1)).subscribe((data) => {
+        expect(data).toEqual(2)
+    })
+    // sending new data should not change the current conf (addition)
+    modules.dataEmitter.emit({ data: [1, 1] })
+    options = div.querySelectorAll('option')
+    
+    expect(options[0].selected).toBeTruthy()
+    expect(options[1].selected).toBeFalsy()
+
+    observers.obs.pipe(take(1)).subscribe((data) => {
+        expect(data).toEqual(2)
+        done()
+    })
+})
+
+
+test('always trigger: no duplicated emit', (done) => {
+
+    document.body.innerHTML = ""
+    let branches = [
+        '                    |~testModule~|---$obs$--',
+        '|~dataEmitter~|---|~autoFormPlugin~|'
+    ]
+
+    let modules = instantiateModules({
+        dataEmitter: ModuleDataEmitter,
+        testModule: [TestModule, {operation: TestModule.operationType.Multiplication} ]
+    })
+
+    let plugins = instantiatePlugins({
+        autoFormPlugin: [modules.testModule, PluginAutoForm, {
+            triggerPolicy: PluginAutoForm.TriggerPolicyEnum.always
+        }]
+    })
+
+    let observers = {
+        obs: new ReplaySubject(1)
+    }
+    let graph = parseGraph({ branches, modules, plugins, observers })
+
+    new Runner(graph)
+
+    observers.obs.pipe(
+        reduce( (acc,e) => {
+           return acc+1 
+        },0 )
+    ).subscribe(
+        (count) => {
+            expect(count).toEqual(3)
+            done()
+        }
+    )
+    let div = document.createElement('div')
+    div.innerHTML = '<div id="autoFormPlugin"></div>'
+    document.body.appendChild(div)
+    renderTemplate(div, Object.values(plugins))
+    // count = 1
+    modules.dataEmitter.emit({ data: [1, 1] })
+
+    let select = div.querySelector('select')
+    // count = 2
+    select.onchange({target: [{ selected: true,  value: TestModule.operationType.Addition }]} as any)
+
+    // count = 3
+    modules.dataEmitter.emit({ data: [1, 1] })
+    observers.obs.complete()
+})
+
