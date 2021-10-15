@@ -243,9 +243,16 @@ export namespace AutoForm {
             }, {})
         
         let r = Object.entries(children)
-            .map(([prefix, { values, basePath }]: any) => [prefix, groupItems(values, configurationBase, basePath, state)])
-            .filter(([_, groupView]) => groupView != undefined)
-            .reduce((acc, [k, v]) => Object.assign({}, acc, { [k]: v }), {})
+            .map(([prefix, { values, basePath }]: any) =>{
+                return [prefix, groupItems(values, configurationBase, basePath, state)] 
+            })
+            .filter(([_, groupView]) =>{
+                return groupView != undefined 
+            })
+            .reduce((acc, [k, v]) => {
+                return Object.assign({}, acc, { [k]: v }) 
+            }, {})
+        
         
         let itemsView = createAttributesGrid(currentItems, basePath, configurationBase, state)
         if(!itemsView){
