@@ -253,11 +253,8 @@ export namespace AutoForm {
                 return Object.assign({}, acc, { [k]: v }) 
             }, {})
         
+        let itemsView = createAttributesGrid(currentItems, basePath, configurationBase, state) || {}
         
-        let itemsView = createAttributesGrid(currentItems, basePath, configurationBase, state)
-        if(!itemsView){
-            return undefined
-        }
         let tabsData = Object.entries(r).map( ([key, val]) => {
             let tabData =  new Tabs.TabData(key,key)
             tabData['view'] = val
