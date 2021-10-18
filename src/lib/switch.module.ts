@@ -104,12 +104,14 @@ export namespace ModuleSwitch {
 
         let view = new Switch.View({
             state: mdle.switchState,
+            style: () => ({ width: 'fit-content' }),
             connectedCallback: (elem: HTMLElement$) => {
                 let sub = mdle.switchState.value$.subscribe((checked) => {
                     mdle.output$.next({ data: checked })
                 })
                 elem.ownSubscriptions(sub)
-            }
+            },
+
         } as any)
         return render(view)
     }
